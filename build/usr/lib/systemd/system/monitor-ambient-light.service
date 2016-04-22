@@ -1,0 +1,13 @@
+[Unit]
+Description=monitor-ambient-light
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/monitor-ambient-light
+KillSignal=SIGINT
+StandardError=null
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+Alias=monitor-ambient-light

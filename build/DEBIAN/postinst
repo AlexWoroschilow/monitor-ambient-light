@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+SERVICE="monitor-ambient-light"
+echo "enable service..."
+systemctl enable $SERVICE
+echo "start service..."
+systemctl start $SERVICE
+

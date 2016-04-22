@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+SERVICE="monitor-ambient-light"
+echo "stop service..."
+systemctl stop $SERVICE
+echo "disable autostart..."
+systemctl disable $SERVICE
+

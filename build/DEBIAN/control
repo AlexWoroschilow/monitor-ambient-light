@@ -1,0 +1,9 @@
+Package: monitor-ambient-light
+Version: 0.01
+Section: misc
+Priority: optional
+Architecture: all
+Depends: 
+Maintainer: Alex Woroschilow <alex.woroschilow@gmail.com>
+Description: Just an experiment using nim lang
+
