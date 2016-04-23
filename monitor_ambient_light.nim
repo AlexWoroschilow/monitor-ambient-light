@@ -20,20 +20,20 @@ import signal
 
 proc main(file: string, log: string) =
 
-  var config = ConfigAmbientLight( path: file)
+  var config = ConfigReader( path: file)
   assert(existsFile(file), "Config file does not exists")
 
-  var timeout: int = parseInt(config.get("als","timeout"))
+  var timeout: int = parseInt(config.get("als.timeout"))
 
-  var intensity_min: int = parseInt(config.get("als","intensity_min"))
-  var intensity_max: int = parseInt(config.get("als","intensity_max"))
-  var intensity_threshold: int = parseInt(config.get("als","intensity_threshold"))
+  var intensity_min: int = parseInt(config.get("als.intensity_min"))
+  var intensity_max: int = parseInt(config.get("als.intensity_max"))
+  var intensity_threshold: int = parseInt(config.get("als.intensity_threshold"))
 
-  var backlight_min: int = parseInt(config.get("als","backlight_min"))
-  var backlight_max: int = parseInt(config.get("als","backlight_max"))
+  var backlight_min: int = parseInt(config.get("als.backlight_min"))
+  var backlight_max: int = parseInt(config.get("als.backlight_max"))
 
-  var location_sensor: string = config.get("als","location_sensor")
-  var location_script: string = config.get("als","location_script")
+  var location_sensor: string = config.get("als.location_sensor")
+  var location_script: string = config.get("als.location_script")
 
   assert(existsDir(location_sensor), "Sensor location folder does not exists")
   assert(existsDir(location_script), "Scripts location folder does not exists")

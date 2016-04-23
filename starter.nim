@@ -28,16 +28,3 @@ iterator commands*(this: var CommandStarter):string =
 iterator start*(this: var CommandStarter, argument: string ):int {.inline.} =
   for script in this.commands():
     yield execCmd("$# $#" % [script, argument])
-
-
-# This code will be executed
-# only if you will build this file
-# separate from another sources
-# so, it is only testing approaches here
-when isMainModule:
-  var starter = CommandStarter(path: "/etc/yoga-ambient-light/update.d")
-  for command in starter.commands():
-    echo(command)
-
-  for error in starter.start("12"):
-    echo(error)

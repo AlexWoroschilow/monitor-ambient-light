@@ -15,40 +15,25 @@ import strutils
 import streams
 import parseutils
 import logging
+import strtabs
 
 type
-  ConfigEntity* = object
-    name*: string
-    value*: string
-    section*: string
-
-proc `section=`*(this: var ConfigEntity, value: string):bool {.inline.} =
-  this.section = value
-
-proc `name=`*(this: var ConfigEntity, value: string):bool {.inline.} =
-  this.name = value
-
-proc `value=`*(this: var ConfigEntity, value: string):bool {.inline.} =
-  this.value = value
-
-
-type
-  ConfigAmbientLight* = object
+  ConfigReader* = object
+    table: StringTableRef
     path*: string
-    timeout*: int
-    threshold*: int
-    intensity_min*: int
-    intensity_max*: int
-    backlight_min*: int
-    backlight_max*: int
 
-proc get*(this: var ConfigAmbientLight, section: string, name: string):string {.inline.} =
+proc load(this: var ConfigReader):bool {.inline.} =
+
+  var section:string
+  var option:string
+  var value:string
+
+  this.table = newStringTable()
+
   var stream = newFileStream(this.path, fmRead)
   assert(stream != nil, "Can not read config file stream")
   var parser = CfgParser()
   open(parser, stream, this.path)
-
-  var entity = ConfigEntity()
 
   while true:
     var expression = next(parser)
@@ -56,21 +41,56 @@ proc get*(this: var ConfigAmbientLight, section: string, name: string):string {.
       of cfgEof:
         break
       of cfgSectionStart:
-        if expression.section == section:
-          entity.section = section
+        # set current active setion
+        # and override last active
+        section = expression.section
       of cfgKeyValuePair:
-        entity.name = expression.key
-        entity.value = expression.value
 
-        if entity.section == section:
-          if entity.name == name:
-            return entity.value
+        # get options value and name
+        # for current session
+        value = expression.value
+        option = expression.key
+
+        debug("found: $#, $#" % [option, value])
+
+        # fill config table with actial values
+        this.table["$#.$#" %[section, option] ]=value
 
       of cfgOption:
-        debug("command: " & expression.key & ": " & expression.value)
+
+        # get options value and name
+        # for current session
+        value = expression.value
+        option = expression.key
+
+        debug("command: $#, $#" % [option, value])
+
       of cfgError:
         error(expression.msg)
   close(parser)
 
+  return true
+
+proc loaded(this: var ConfigReader):bool {.inline.} =
+  if this.table != nil:
+    return (this.table.len() > 0)
+  return false
+
+proc get*(this: var ConfigReader, key: string):string {.inline.} =
+  if not this.loaded():
+    assert(this.load(), "Can not load config file")
+
+  if this.table.hasKey(key):
+    return this.table[key]
+
   return nil
 
+proc get*(this: var ConfigReader, section: string, name: string):string {.inline.} =
+  if not this.loaded():
+    assert(this.load(), "Can not load config file")
+
+  var key = "$#.$#" % [section, name]
+  if this.table.hasKey(key):
+    return this.table[key]
+
+  return nil
