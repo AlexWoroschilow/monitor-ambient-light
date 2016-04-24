@@ -11,64 +11,57 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 import os
 import strutils
-import sensors
-import normalizer
-import starter
-import config
 import logging
-import signal
+
+import src/config
+import src/signal
+import src/starter
+import src/sensors
+import src/normalizer
 
 proc main(file: string, log: string) =
+  addHandler(newRollingFileLogger(log, levelThreshold = lvlDebug))
+  setControlCHook(handler)
 
-  var config = ConfigReader( path: file)
-  assert(existsFile(file), "Config file does not exists")
-
+  var config = newConfigReader(file)
   var timeout: int = parseInt(config.get("als.timeout"))
 
   var intensity_min: int = parseInt(config.get("als.intensity_min"))
   var intensity_max: int = parseInt(config.get("als.intensity_max"))
   var intensity_threshold: int = parseInt(config.get("als.intensity_threshold"))
-
-  var backlight_min: int = parseInt(config.get("als.backlight_min"))
-  var backlight_max: int = parseInt(config.get("als.backlight_max"))
-
-  var location_sensor: string = config.get("als.location_sensor")
-  var location_script: string = config.get("als.location_script")
-
-  assert(existsDir(location_sensor), "Sensor location folder does not exists")
-  assert(existsDir(location_script), "Scripts location folder does not exists")
-
-  addHandler(newRollingFileLogger(log, levelThreshold = lvlInfo))
   info("intensity minimal: $#" % [intToStr(intensity_min)])
   info("intensity maximal: $#" % [intToStr(intensity_max)])
   info("intensity threshold: $#" % [intToStr(intensity_threshold)])
+
+  var backlight_min: int = parseInt(config.get("als.backlight_min"))
+  var backlight_max: int = parseInt(config.get("als.backlight_max"))
   info("backlight minimal: $#" % [intToStr(backlight_min)])
   info("backlight maximal: $#" % [intToStr(backlight_max)])
+
+  var location_sensor: string = config.get("als.location_sensor")
+  var location_script: string = config.get("als.location_script")
   info("sensors:\t$#" % [location_sensor])
   info("scripts:\t$#" % [location_script])
 
   var starter = CommandStarter(path: location_script)
-  var sensor_finder = SensorFinder(path: location_sensor)
   var normalizer_backlight = Normalizer(min: backlight_min, max: backlight_max)
   var normalizer_intencity = Normalizer(min: intensity_min, max: intensity_max)
 
-  var sensor = sensor_finder.get("als")
+  var sensor = getSensorAmbientLight(location_sensor)
   while not sensor.exists() or not sensor.enable():
     error("sensor not found, sleep: $# " % intToStr(timeout))
     sleep(timeout)
-
-  setControlCHook(handler)
 
   var previous: int = 0
 
   while true:
     var current = normalizer_intencity.percent(sensor.intensity())
-    if abs(current-previous) >=  intensity_threshold:
+    if abs(current-previous) >= intensity_threshold:
       var backlight = normalizer_backlight.percent(current)
       debug("ambient light: $#, backlight: $#" % [intToStr(current), intToStr(backlight)])
       for error in starter.start(intToStr(backlight)):
         debug("starter script error number: $# " % intToStr(error))
-      previous = current
+    previous = current
     sleep(timeout)
 
 
